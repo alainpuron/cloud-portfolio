@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S3 for Hosting Static Website - Alain Puron</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        .article-page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 5rem;
+        }
+
+        .article-layout {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .article-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 24px;
+            padding: 3.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
+            color: #0f172a;
+        }
+
+        .article-sidebar {
+            position: sticky;
+            top: 2rem;
+        }
+
+        .sidebar-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 1.75rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+        }
+
+        .sidebar-title {
+            font-size: 1rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #0b2545;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .related-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .related-item {
+            margin-bottom: 0.75rem;
+        }
+
+        .related-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .related-link {
+            font-size: 0.925rem;
+            color: #1d4ed8;
+            text-decoration: none;
+            font-weight: 600;
+            line-height: 1.4;
+            display: inline-block;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .related-link:hover {
+            color: #1e3a8a;
+            transform: translateX(2px);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.825rem;
+            font-weight: 700;
+            color: #1d4ed8;
+            text-decoration: none;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            transition: transform 0.25s ease;
+        }
+
+        .back-link:hover {
+            transform: translateX(-3px);
+        }
+
+        .article-header {
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 2rem;
+        }
+
+        .article-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .article-title {
+            font-size: 2.75rem;
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            color: #0b2545;
+            margin-bottom: 1rem;
+        }
+
+        .article-lead {
+            font-size: 1.15rem;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        .article-content {
+            font-size: 1.05rem;
+            line-height: 1.75;
+            color: #334155;
+        }
+
+        .article-content h2 {
+            font-size: 1.65rem;
+            font-weight: 700;
+            color: #0b2545;
+            margin: 2.25rem 0 1rem;
+            letter-spacing: -0.01em;
+        }
+
+        .article-content h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin: 1.75rem 0 0.75rem;
+        }
+
+        .article-content p {
+            margin-bottom: 1.5rem;
+        }
+
+        .code-block {
+            background: #0f172a;
+            color: #f8fafc;
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            border: 1px solid #1e293b;
+        }
+
+        .code-block code {
+            font-family: inherit;
+        }
+
+        @media (max-width: 992px) {
+            .article-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .article-sidebar {
+                position: static;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .article-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .article-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-canvas">
+        <div class="article-page">
+            <a href="../index.html" class="back-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12" />
+                    <polyline points="12 19 5 12 12 5" />
+                </svg>
+                <span>Back to Home</span>
+            </a>
+
+            <div class="article-layout">
+                <!-- Main Article Card -->
+                <article class="article-card">
+                    <header class="article-header">
+                        <div class="article-meta">
+                            <span class="service-tag">AWS / STORAGE</span>
+                            <span class="project-date">AUG 20, 2026</span>
+                        </div>
+                        <h1 class="article-title">S3 for Hosting Static Website</h1>
+                        <p class="article-lead">
+                            Configure your AWS S3 bucket for static website hosting using CloudShell commands.
+                        </p>
+                    </header>
+
+                    <div class="article-content">
+                        <h2>1. Create Your Bucket</h2>
+                        <p>Go to CloudShell and type:</p>
+                        <div class="code-block">
+                            <code>aws s3 mb s3://your-unique-bucket-name --region us-east-1</code>
+                        </div>
+
+                        <h2>2. Enable Website Hosting</h2>
+                        <p>Enable static website hosting on your S3 bucket:</p>
+                        <div class="code-block">
+                            <code>aws s3 website s3://your-bucket-name --index-document index.html --error-document index.html</code>
+                        </div>
+
+                        <h2>3. Turn Off Block Public Access</h2>
+                        <p>Disable block public access settings for the bucket:</p>
+                        <div class="code-block">
+                            <code>aws s3api put-public-access-block \ <br>
+    --bucket your-bucket-name \ <br>
+    --public-access-block-configuration "BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false"</code>
+                        </div>
+
+                        <h2>4. Apply Public Read Policy</h2>
+                        <p>Create a bucket policy allowing public read access and apply it to your bucket:</p>
+                        <div class="code-block">
+                            <code>cat &lt;&lt;EOF &gt; policy.json <br>
+{ <br>
+&nbsp;&nbsp;"Version": "2012-10-17", <br>
+&nbsp;&nbsp;"Statement": [ <br>
+&nbsp;&nbsp;&nbsp;&nbsp;{ <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Sid": "PublicReadGetObject", <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Effect": "Allow", <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Principal": "*", <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Action": "s3:GetObject", <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Resource": "arn:aws:s3:::your-bucket-name/*" <br>
+&nbsp;&nbsp;&nbsp;&nbsp;} <br>
+&nbsp;&nbsp;] <br>
+} <br>
+EOF <br><br>
+aws s3api put-bucket-policy --bucket your-bucket-name --policy file://policy.json</code>
+                        </div>
+                        <p>If that didn't work, go to <strong>Permissions</strong> &gt; <strong>Bucket policy</strong> in the AWS Management Console and paste the policy instead.</p>
+                    </div>
+                </article>
+
+                <!-- Right Sub Menu Sidebar -->
+                <aside class="article-sidebar">
+                    <div class="sidebar-card">
+                        <h3 class="sidebar-title">Related</h3>
+                        <ul class="related-list">
+                            <li class="related-item">
+                                <a href="how-to-create-an-aws-s3-bucket.html" class="related-link">How to Create an AWS
+                                    S3 Bucket</a>
+                            </li>
+                        </ul>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

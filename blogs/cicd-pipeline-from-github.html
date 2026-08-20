@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automating AWS S3 Deployments with GitHub CI/CD Pipeline - Alain Puron</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        .article-page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 5rem;
+        }
+
+        .article-layout {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .article-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 24px;
+            padding: 3.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
+            color: #0f172a;
+        }
+
+        .article-sidebar {
+            position: sticky;
+            top: 2rem;
+        }
+
+        .sidebar-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 1.75rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+        }
+
+        .sidebar-title {
+            font-size: 1rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #0b2545;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .related-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .related-item {
+            margin-bottom: 0.75rem;
+        }
+
+        .related-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .related-link {
+            font-size: 0.925rem;
+            color: #1d4ed8;
+            text-decoration: none;
+            font-weight: 600;
+            line-height: 1.4;
+            display: inline-block;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .related-link:hover {
+            color: #1e3a8a;
+            transform: translateX(2px);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.825rem;
+            font-weight: 700;
+            color: #1d4ed8;
+            text-decoration: none;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            transition: transform 0.25s ease;
+        }
+
+        .back-link:hover {
+            transform: translateX(-3px);
+        }
+
+        .article-header {
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 2rem;
+        }
+
+        .article-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .article-title {
+            font-size: 2.75rem;
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            color: #0b2545;
+            margin-bottom: 1rem;
+        }
+
+        .article-lead {
+            font-size: 1.15rem;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        .article-content {
+            font-size: 1.05rem;
+            line-height: 1.75;
+            color: #334155;
+        }
+
+        .article-content h2 {
+            font-size: 1.65rem;
+            font-weight: 700;
+            color: #0b2545;
+            margin: 2.25rem 0 1rem;
+            letter-spacing: -0.01em;
+        }
+
+        .article-content h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin: 1.75rem 0 0.75rem;
+        }
+
+        .article-content p {
+            margin-bottom: 1.5rem;
+        }
+
+        .code-block {
+            background: #0f172a;
+            color: #f8fafc;
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            border: 1px solid #1e293b;
+        }
+
+        .code-block code {
+            font-family: inherit;
+        }
+
+        @media (max-width: 992px) {
+            .article-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .article-sidebar {
+                position: static;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .article-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .article-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-canvas">
+        <div class="article-page">
+            <a href="../index.html" class="back-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12" />
+                    <polyline points="12 19 5 12 12 5" />
+                </svg>
+                <span>Back to Home</span>
+            </a>
+
+            <div class="article-layout">
+                <!-- Main Article Card -->
+                <article class="article-card">
+                    <header class="article-header">
+                        <div class="article-meta">
+                            <span class="service-tag">DEVOPS / CI/CD</span>
+                            <span class="project-date">AUG 20, 2026</span>
+                        </div>
+                        <h1 class="article-title">Automating AWS S3 Deployments with GitHub CI/CD Pipeline</h1>
+                        <p class="article-lead">
+                            Set up automated deployments to your AWS S3 bucket directly from a GitHub repository using
+                            IAM credentials and CI/CD workflows.
+                        </p>
+                    </header>
+
+                    <div class="article-content">
+                        <h2>Step 1. Create an IAM User Using CloudShell</h2>
+                        <p>Open AWS CloudShell and create a dedicated deployer user:</p>
+                        <div class="code-block">
+                            <code>aws iam create-user --user-name github-s3-deployer</code>
+                        </div>
+
+                        <h2>Step 2. Attach S3 Bucket Policy to User</h2>
+                        <p>Create a policy file defining the required S3 permissions for deployment:</p>
+                        <div class="code-block">
+                            <code>cat &lt;&lt;EOF &gt; user-policy.json <br>
+{ <br>
+&nbsp;&nbsp;"Version": "2012-10-17", <br>
+&nbsp;&nbsp;"Statement": [ <br>
+&nbsp;&nbsp;&nbsp;&nbsp;{ <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Effect": "Allow", <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Action": [ <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"s3:PutObject", <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"s3:GetObject", <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"s3:ListBucket", <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"s3:DeleteObject" <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;], <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Resource": [ <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"arn:aws:s3:::your-bucket-name", <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"arn:aws:s3:::your-bucket-name/*" <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;] <br>
+&nbsp;&nbsp;&nbsp;&nbsp;} <br>
+&nbsp;&nbsp;] <br>
+} <br>
+                            <code>aws iam put-user-policy --user-name github-s3-deployer --policy-name GitHubS3DeployPolicy --policy-document file://user-policy.json</code>
+                        </div>
+
+                        <h2>Step 3. Generate Access Keys</h2>
+                        <p>Generate access keys for the deployer user (make sure to save the output of this command):
+                        </p>
+                        <div class="code-block">
+                            <code>aws iam create-access-key --user-name github-s3-deployer</code>
+                        </div>
+
+                        <h2>Step 4. Configure GitHub Repository Secrets</h2>
+                        <p>In your GitHub repository, navigate to <strong>Settings</strong> &gt; <strong>Secrets and
+                                variables</strong> &gt; <strong>Actions</strong>, then click <strong>New repository
+                                secret</strong> to add the following secrets:</p>
+
+                        <strong>Name:</strong> <code>AWS_ACCESS_KEY_ID</code> &mdash; paste the access key ID as
+                        the value. <br>
+                        <strong>Name:</strong> <code>AWS_SECRET_ACCESS_KEY</code> &mdash; paste the secret
+                        access key as the value. <br><br>
+
+                        <h2>Step 5. Create GitHub Actions Workflow File</h2>
+                        <p>In your repository, create a file at <code>.github/workflows/deploy.yml</code> with the following content:</p>
+                        <div class="code-block">
+                            <code>name: Deploy Website to AWS S3 <br><br>
+on: <br>
+&nbsp;&nbsp;push: <br>
+&nbsp;&nbsp;&nbsp;&nbsp;branches: <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- main <br><br>
+jobs: <br>
+&nbsp;&nbsp;deploy: <br>
+&nbsp;&nbsp;&nbsp;&nbsp;runs-on: ubuntu-latest <br>
+&nbsp;&nbsp;&nbsp;&nbsp;steps: <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- name: Checkout repository <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uses: actions/checkout@v4 <br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- name: Configure AWS Credentials <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uses: aws-actions/configure-aws-credentials@v4 <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;with: <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;aws-access-key-id: \${{ secrets.AWS_ACCESS_KEY_ID }} <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;aws-secret-access-key: \${{ secrets.AWS_SECRET_ACCESS_KEY }} <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;aws-region: us-east-1 <br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- name: Sync files to S3 <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;run: | <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;aws s3 sync . s3://your-bucket-name --delete --exclude ".git/*" --exclude ".github/*"</code>
+                        </div>
+                        <p style="margin-top: 2rem;">And that's it! Try committing to your <code>main</code> branch and check your S3 bucket to verify the automated deployment.</p>
+                    </div>
+                </article>
+
+                <!-- Right Sub Menu Sidebar -->
+                <aside class="article-sidebar">
+                    <div class="sidebar-card">
+                        <h3 class="sidebar-title">Related</h3>
+                        <ul class="related-list">
+                            <li class="related-item">
+                                <a href="how-to-create-an-aws-s3-bucket.html" class="related-link">How to Create an AWS
+                                    S3 Bucket</a>
+                            </li>
+                            <li class="related-item">
+                                <a href="s3-for-hosting-static-website.html" class="related-link">S3 for Hosting Static
+                                    Website</a>
+                            </li>
+                        </ul>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

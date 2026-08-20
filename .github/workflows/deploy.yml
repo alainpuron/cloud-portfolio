@@ -1,4 +1,4 @@
-name: Deploy Portfolio to S3
+name: Deploy Website to AWS S3
 
 on:
   push:
@@ -9,7 +9,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
@@ -19,6 +19,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Sync Files to S3
+      - name: Sync files to S3
         run: |
-          aws s3 sync . s3://alainpuron-cloud-portfolio --delete --exclude ".git/*" --exclude ".github/*" 
+          aws s3 sync . s3://your-bucket-name --delete --exclude ".git/*" --exclude ".github/*"
