@@ -1,4 +1,4 @@
-const apiEndpoint = "https://34sekeelhf.execute-api.us-west-2.amazonaws.com";
+const apiEndpoint = "https://oasi55hqkb.execute-api.us-west-2.amazonaws.com";
 
 async function updateVisitorCount() {
   try {
