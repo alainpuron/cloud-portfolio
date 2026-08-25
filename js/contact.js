@@ -1,7 +1,10 @@
-document.getElementById('contact-form')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  
-  const statusEl = document.getElementById('form-status');
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("contact-form");
+  if (!form) return;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+     const statusEl = document.getElementById('form-status');
   const submitBtn = document.getElementById('submit-btn');
   
   statusEl.innerText = "Sending...";
@@ -34,4 +37,5 @@ document.getElementById('contact-form')?.addEventListener('submit', async (e) =>
   } finally {
     submitBtn.disabled = false;
   }
+  });
 });
