@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <script src="/js/script.js"></script>
+    <script src="/js/contact.js"></script>
 </head>
 
 <body>
@@ -152,6 +153,16 @@
             </div>
         </section>
     </div>
+
+    <section>
+        <form id="contact-form">
+  <input type="text" id="name" placeholder="Your Name" required />
+  <input type="email" id="email" placeholder="Your Email" required />
+  <textarea id="message" placeholder="Your Message" required></textarea>
+  <button type="submit" id="submit-btn">Send Message</button>
+  <p id="form-status"></p>
+</form>
+    </section>
 </body>
 
 </html>
