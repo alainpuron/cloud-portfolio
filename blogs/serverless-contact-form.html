@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Serverless Contact Form - Alain Puron</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../css/styles.css" />
+    <link rel="stylesheet" href="../css/blog.css" />
+  </head>
+
+  <body>
+    <div class="app-canvas">
+      <div class="article-page">
+        <a href="../index.html" class="back-link">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+          <span>Back to Home</span>
+        </a>
+
+        <div class="article-layout">
+          <!-- Main Article Card -->
+          <article class="article-card">
+            <header class="article-header">
+              <div class="article-meta">
+                <span class="service-tag">AWS / SERVERLESS</span>
+                <span class="project-date">AUG 25, 2026</span>
+              </div>
+              <h1 class="article-title">Serverless Contact Form</h1>
+              <p class="article-lead">
+                Build a secure, serverless contact form on AWS using SES, Lambda, and HTTP API Gateway, integrated into a dark-themed responsive frontend and proxied through CloudFront.
+              </p>
+            </header>
+
+            <div class="article-content">
+              <h2>1. Amazon SES Identity Verification</h2>
+              <p>In the AWS SES Sandbox environment, both sender and recipient email addresses must be explicitly verified before sending messages.</p>
+              <div class="code-block">
+                <pre><code>aws ses verify-email-identity \
+  --email-address your-email@example.com \
+  --region us-west-2</code></pre>
+              </div>
+
+              <h2>2. IAM Permissions Policy for Amazon SES</h2>
+              <p>Grant the Lambda execution role authorization to dispatch emails via Amazon SES.</p>
+              <div class="code-block">
+                <pre><code>cat &lt;&lt;EOF &gt; lambda-ses-policy.json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ses:SendEmail",
+        "ses:SendRawEmail"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+
+aws iam put-role-policy \
+  --role-name visitor-counter-lambda-role \
+  --policy-name LambdaSESAccess \
+  --policy-document file://lambda-ses-policy.json</code></pre>
+              </div>
+
+              <h2>3. Lambda Contact Handler Code</h2>
+              <p>This Python function handles preflight CORS <code>OPTIONS</code> requests, validates payload fields, and sends formatted email notifications via <code>boto3</code>.</p>
+              <div class="code-block">
+                <pre><code>cat &lt;&lt; 'EOF' &gt; contact_function.py
+import json
+import boto3
+
+SENDER_EMAIL = "your-email@example.com"
+RECIPIENT_EMAIL = "your-email@example.com"
+
+ses_client = boto3.client('ses', region_name='us-west-2')
+
+def lambda_handler(event, context):
+    cors_headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key',
+        'Access-Control-Allow-Methods': 'POST,OPTIONS'
+    }
+
+    # Handle CORS preflight OPTIONS request
+    if event.get('requestContext', {}).get('http', {}).get('method') == 'OPTIONS':
+        return {'statusCode': 200, 'headers': cors_headers, 'body': ''}
+
+    try:
+        body = json.loads(event.get('body', '{}'))
+        name = body.get('name', '').strip()
+        sender = body.get('email', '').strip()
+        message = body.get('message', '').strip()
+
+        if not name or not sender or not message:
+            return {
+                'statusCode': 400,
+                'headers': cors_headers,
+                'body': json.dumps({'error': 'Missing required fields.'})
+            }
+
+        subject = f"New Portfolio Contact from {name}"
+        body_text = f"Name: {name}\nEmail: {sender}\n\nMessage:\n{message}"
+
+        ses_client.send_email(
+            Source=SENDER_EMAIL,
+            Destination={'ToAddresses': [RECIPIENT_EMAIL]},
+            Message={
+                'Subject': {'Data': subject},
+                'Body': {'Text': {'Data': body_text}}
+            },
+            ReplyToAddresses=[sender]
+        )
+
+        return {
+            'statusCode': 200,
+            'headers': cors_headers,
+            'body': json.dumps({'message': 'Message sent successfully!'})
+        }
+
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': cors_headers,
+            'body': json.dumps({'error': 'Internal server error', 'details': str(e)})
+        }
+EOF
+
+zip contact_function.zip contact_function.py
+
+ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+
+aws lambda create-function \
+  --function-name send-contact-email \
+  --runtime python3.12 \
+  --role arn:aws:iam::${ACCOUNT_ID}:role/visitor-counter-lambda-role \
+  --handler contact_function.lambda_handler \
+  --zip-file fileb://contact_function.zip \
+  --timeout 10 \
+  --region us-west-2</code></pre>
+              </div>
+
+              <h2>4. HTTP API Gateway Route & Integration</h2>
+              <p>Expose the function under the <code>POST /api/contact</code> path on your existing HTTP API Gateway instance.</p>
+              <div class="code-block">
+                <pre><code># 1. Create API Integration
+INTEGRATION_ID=$(aws apigatewayv2 create-integration \
+    --api-id oasi55hqkb \
+    --integration-type AWS_PROXY \
+    --integration-uri arn:aws:lambda:us-west-2:${ACCOUNT_ID}:function:send-contact-email \
+    --payload-format-version 2.0 \
+    --region us-west-2 \
+    --query "IntegrationId" --output text)
+
+# 2. Add POST /api/contact Route
+aws apigatewayv2 create-route \
+    --api-id oasi55hqkb \
+    --route-key 'POST /api/contact' \
+    --target "integrations/${INTEGRATION_ID}" \
+    --region us-west-2
+
+# 3. Grant Invoke Permission
+aws lambda add-permission \
+    --function-name send-contact-email \
+    --statement-id apigateway-contact-perm \
+    --action lambda:InvokeFunction \
+    --principal apigateway.amazonaws.com \
+    --source-arn "arn:aws:execute-api:us-west-2:${ACCOUNT_ID}:oasi55hqkb/*/*" \
+    --region us-west-2</code></pre>
+              </div>
+
+              <h2>5. Frontend HTML Structure & CSS Styling</h2>
+              <p>Add the styled container to your site markup and extend your stylesheet for focus states, input fields, and status feedback colors.</p>
+
+              <p><strong>HTML Form Markup:</strong></p>
+              <div class="code-block">
+                <pre><code>&lt;div class="contact-form-container"&gt;
+  &lt;form id="contact-form"&gt;
+    &lt;div class="form-field"&gt;
+      &lt;label for="name"&gt;Name&lt;/label&gt;
+      &lt;input type="text" id="name" placeholder="John Doe" required /&gt;
+    &lt;/div&gt;
+
+    &lt;div class="form-field"&gt;
+      &lt;label for="email"&gt;Email&lt;/label&gt;
+      &lt;input type="email" id="email" placeholder="john@example.com" required /&gt;
+    &lt;/div&gt;
+
+    &lt;div class="form-field"&gt;
+      &lt;label for="message"&gt;Message&lt;/label&gt;
+      &lt;textarea id="message" placeholder="Write your message here..." required&gt;&lt;/textarea&gt;
+    &lt;/div&gt;
+
+    &lt;button type="submit" id="submit-btn"&gt;Send Message&lt;/button&gt;
+    &lt;p id="form-status"&gt;&lt;/p&gt;
+  &lt;/form&gt;
+&lt;/div&gt;</code></pre>
+              </div>
+
+              <p><strong>CSS Styling (styles.css / blog.css):</strong></p>
+              <div class="code-block">
+                <pre><code>.contact-form-container {
+  max-width: 600px;
+  margin: 2rem 0;
+  padding: 2rem;
+  background-color: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+}
+
+#contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-field label {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+#contact-form input,
+#contact-form textarea {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.95rem;
+  color: #f8fafc;
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+  box-sizing: border-box;
+}
+
+#contact-form input:focus,
+#contact-form textarea:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+  background-color: #0f172a;
+}
+
+#submit-btn {
+  align-self: flex-start;
+  padding: 0.875rem 1.75rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #0f172a;
+  background-color: #38bdf8;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+#submit-btn:hover {
+  background-color: #7dd3fc;
+  transform: translateY(-1px);
+}
+
+#submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+#form-status {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  min-height: 1.25rem;
+}
+
+#form-status.success { color: #4ade80; }
+#form-status.error { color: #f87171; }</code></pre>
+              </div>
+
+              <h2>6. JavaScript Form Handler (`contact.js`)</h2>
+              <p>Encapsulate form submission logic within a <code>DOMContentLoaded</code> wrapper to prevent execution delays on DOM elements.</p>
+              <div class="code-block">
+                <pre><code>document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("contact-form");
+  if (!form) return;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const statusEl = document.getElementById("form-status");
+    const submitBtn = document.getElementById("submit-btn");
+
+    statusEl.className = "";
+    statusEl.innerText = "Sending...";
+    submitBtn.disabled = true;
+
+    const payload = {
+      name: document.getElementById("name").value,
+      email: document.getElementById("email").value,
+      message: document.getElementById("message").value
+    };
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        statusEl.className = "success";
+        statusEl.innerText = "Message sent successfully!";
+        form.reset();
+      } else {
+        statusEl.className = "error";
+        statusEl.innerText = result.error || "Failed to send message.";
+      }
+    } catch (err) {
+      console.error("Contact Form Error:", err);
+      statusEl.className = "error";
+      statusEl.innerText = "Error sending message. Please try again.";
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+});</code></pre>
+              </div>
+
+              <h2>7. Deployment & Cache Invalidation</h2>
+              <p>Deploy asset updates to S3 and invalidate CloudFront edge caches.</p>
+              <div class="code-block">
+                <pre><code>aws cloudfront create-invalidation \
+  --distribution-id d1nrzvrxt6zac1 \
+  --paths "/*"</code></pre>
+              </div>
+
+              <h2>8. Architectural Insights & Troubleshooting</h2>
+              <ul>
+                <li><strong>CORS Preflight (OPTIONS):</strong> Browsers automatically send an <code>OPTIONS</code> request prior to cross-origin <code>POST</code> requests with JSON payloads. Lambda must handle this explicitly and return 200 OK with allowed headers.</li>
+                <li><strong>CloudFront Path Alignment:</strong> Since CloudFront proxies the <code>/api/*</code> pattern to API Gateway, the API Gateway route must match the forwarded path (<code>POST /api/contact</code>).</li>
+                <li><strong>DOM Ready Execution:</strong> When storing JavaScript in dedicated script files, wrap execution logic inside <code>DOMContentLoaded</code> or use the <code>defer</code> attribute to prevent target elements from evaluating to <code>null</code>.</li>
+              </ul>
+            </div>
+          </article>
+
+          <!-- Right Sidebar -->
+          <aside class="article-sidebar">
+            <div class="sidebar-card">
+              <h3 class="sidebar-title">Related Projects</h3>
+              <ul class="related-list">
+                <li class="related-item">
+                  <a href="serverless-visitor-counter.html" class="related-link"
+                    >Serverless Visitor Counter</a
+                  >
+                </li>
+                <li class="related-item">
+                  <a href="how-to-create-an-aws-s3-bucket.html" class="related-link"
+                    >How to Create an AWS S3 Bucket</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
