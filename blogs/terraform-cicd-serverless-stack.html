@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Automating Serverless Infrastructure with Terraform & GitHub Actions -
+      Alain Puron
+    </title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../css/styles.css" />
+    <link rel="stylesheet" href="../css/blog.css" />
+  </head>
+
+  <body>
+    <div class="app-canvas">
+      <div class="article-page">
+        <a href="../blog.html" class="back-link">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+          <span>Back to Blog</span>
+        </a>
+
+        <div class="article-layout">
+          <article class="article-card">
+            <header class="article-header">
+              <div class="article-meta">
+                <span class="service-tag">TERRAFORM / GITHUB ACTIONS</span>
+                <span class="project-date">AUG 27, 2026</span>
+              </div>
+              <h1 class="article-title">
+                Automating Serverless Infrastructure with Terraform & GitHub
+                Actions
+              </h1>
+              <p class="article-lead">
+                How I migrated a manual AWS serverless backend into 100%
+                version-controlled Infrastructure as Code (IaC) with remote
+                state locking, pull-request automation, and seamless CloudFront
+                same-origin routing.
+              </p>
+            </header>
+
+            <div class="article-content">
+              <h2>1. Architectural Overview</h2>
+              <p>
+                To eliminate manual AWS Console configurations ("clickops"), I
+                codified the entire portfolio infrastructure using HashiCorp
+                Terraform. All backend resources are defined in declarative HCL
+                files, managed via an encrypted remote state backend, and
+                automatically deployed through a GitHub Actions CI/CD pipeline.
+              </p>
+
+              <h2>2. Remote State & Concurrent Lock Safety</h2>
+              <p>
+                To prevent state loss and ensure execution lock safety during
+                pipeline runs, state is stored in S3 and locked using DynamoDB.
+              </p>
+              <ul>
+                <li>
+                  <strong>S3 Backend Bucket:</strong> Encrypted storage with
+                  versioning enabled for state recovery.
+                </li>
+                <li>
+                  <strong>DynamoDB Lock Table:</strong> Primary key
+                  <code>LockID</code> prevents concurrent pipeline runs from
+                  corrupting state.
+                </li>
+              </ul>
+              <div class="code-block">
+                <pre><code># backend.tf
+terraform {
+  backend "s3" {
+    bucket         = "alain-puron-terraform-state-bucket-2026"
+    key            = "global/s3/terraform.tfstate"
+    region         = "us-west-2"
+    dynamodb_table = "alain-puron-terraform-state-locks-2026"
+    encrypt        = true
+  }
+}</code></pre>
+              </div>
+
+              <h2>3. Continuous Integration & Deployment Pipeline</h2>
+              <p>
+                Every code modification follows a strict Pull Request workflow.
+                Pushing to a feature branch triggers
+                <code>terraform plan</code> in GitHub Actions to preview
+                resource changes. Merging into <code>main</code> triggers
+                <code>terraform apply</code> automatically.
+              </p>
+              <div class="code-block">
+                <pre><code># .github/workflows/terraform.yml snippet
+- name: Terraform Plan
+  if: github.event_name == 'pull_request'
+  run: terraform plan -no-color
+
+- name: Terraform Apply
+  if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  run: terraform apply -auto-approve</code></pre>
+              </div>
+
+              <h2>4. Codified Serverless Stack</h2>
+              <p>
+                The entire serverless core is managed in modular Terraform
+                files:
+              </p>
+              <ul>
+                <li>
+                  <code>dynamodb.tf</code>: On-demand pay-per-request visitor
+                  counter table.
+                </li>
+                <li>
+                  <code>iam.tf</code>: Least-privilege execution roles for AWS
+                  Lambda, SES, and DynamoDB.
+                </li>
+                <li>
+                  <code>lambda.tf</code>: Automated zip archiving and deployment
+                  of Python handler scripts.
+                </li>
+                <li>
+                  <code>api_gateway.tf</code>: HTTP API Gateway routes (<code
+                    >GET /</code
+                  >
+                  and <code>POST /api/contact</code>).
+                </li>
+              </ul>
+
+              <h2>5. Same-Origin CloudFront Routing (Zero CORS)</h2>
+              <p>
+                By mapping CloudFront origin request behaviors to route
+                <code>/api/*</code> traffic straight to API Gateway, the browser
+                treats backend API calls as same-origin requests. This
+                completely eliminates CORS preflight (<code>OPTIONS</code>)
+                latency overhead and keeps frontend scripts calling relative
+                paths like <code>fetch('/api/contact')</code> cleanly.
+              </p>
+
+              <h2>6. Key Technical Takeaways</h2>
+              <ul>
+                <li>
+                  <strong>Resource Import:</strong> Adopted live legacy
+                  resources into HCL state tracking using
+                  <code>terraform import</code> without downtime.
+                </li>
+                <li>
+                  <strong>Automated Code Formatting:</strong> Integrated
+                  <code>terraform fmt -check</code> in CI/CD to enforce clean
+                  coding standards across commits.
+                </li>
+                <li>
+                  <strong>Zero-Trust IAM:</strong> Provisioned dedicated CI/CD
+                  IAM service users restricted specifically to infrastructure
+                  deployment tasks.
+                </li>
+              </ul>
+            </div>
+          </article>
+
+          <aside class="article-sidebar">
+            <div class="sidebar-card">
+              <h3 class="sidebar-title">Related Case Studies</h3>
+              <ul class="related-list">
+                <li class="related-item">
+                  <a href="serverless-contact-form.html" class="related-link"
+                    >Serverless Contact Form with SES</a
+                  >
+                </li>
+                <li class="related-item">
+                  <a href="serverless-visitor-counter.html" class="related-link"
+                    >Serverless Visitor Counter</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
