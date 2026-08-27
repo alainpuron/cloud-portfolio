@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Mastering Advanced HCL: Loops, Imports, and Dynamic Infrastructure - Alain
+      Puron
+    </title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../css/styles.css" />
+    <link rel="stylesheet" href="../css/blog.css" />
+  </head>
+
+  <body>
+    <div class="app-canvas">
+      <div class="article-page">
+        <a href="../blog.html" class="back-link">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+          <span>Back to Blog</span>
+        </a>
+
+        <div class="article-layout">
+          <article class="article-card">
+            <header class="article-header">
+              <div class="article-meta">
+                <span class="service-tag">TERRAFORM / AWS</span>
+                <span class="project-date">AUG 27, 2026</span>
+              </div>
+              <h1 class="article-title">
+                Mastering Advanced HCL: Loops, Imports, and Dynamic
+                Infrastructure
+              </h1>
+              <p class="article-lead">
+                Refactoring static HCL into production-grade Terraform using
+                data sources, local values, conditional feature toggles,
+                for_each loops, and native declarative imports.
+              </p>
+            </header>
+
+            <div class="article-content">
+              <h2>1. Dynamic Context with Data Sources & Locals</h2>
+              <p>
+                Hardcoding AWS Account IDs or Region names creates fragile
+                configurations. By leveraging AWS Data Sources, infrastructure
+                context is queried live during runtime and fed directly into
+                centralized local tag blocks.
+              </p>
+              <div class="code-block">
+                <pre><code># data.tf
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
+# locals.tf
+locals {
+  common_tags = {
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+    CreatedBy   = "Alain Puron"
+    Region      = data.aws_region.current.region
+    AccountId   = data.aws_caller_identity.current.account_id
+  }
+}</code></pre>
+              </div>
+
+              <h2>2. DRY Resource Generation with `for_each`</h2>
+              <p>
+                Rather than duplicating resource blocks for every CloudWatch Log
+                Group, a single dynamic block driven by a string set variable
+                processes multiple Lambda functions cleanly while maintaining
+                individual state tracking.
+              </p>
+              <div class="code-block">
+                <pre><code># logging.tf
+resource "aws_cloudwatch_log_group" "lambda_logs" {
+  for_each          = var.lambda_functions
+  name              = "/aws/lambda/${each.value}"
+  retention_in_days = var.log_retention_days
+  tags              = local.common_tags
+}</code></pre>
+              </div>
+
+              <h2>3. Feature Flagging with Conditional Toggles</h2>
+              <p>
+                To control resource creation across environments without
+                altering code structure, conditional evaluation (`count`) is
+                paired with boolean flag variables.
+              </p>
+              <div class="code-block">
+                <pre><code># alarms.tf
+resource "aws_cloudwatch_metric_alarm" "visitor_lambda_errors" {
+  count               = var.enable_alerts ? 1 : 0
+  alarm_name          = "visitor-lambda-error-alarm"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "Errors"
+  namespace           = "AWS/Lambda"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 1
+  dimensions          = { FunctionName = "increment-visitor-counter" }
+  tags                = local.common_tags
+}</code></pre>
+              </div>
+
+              <h2>
+                4. Adopting Existing AWS Resources via Declarative Imports
+              </h2>
+              <p>
+                When AWS services auto-generate implicit resources (such as
+                Lambda creating log groups upon first execution), standard
+                deployments fail with a
+                <code>ResourceAlreadyExistsException</code>. Using native HCL
+                <code>import</code> blocks avoids complex CLI shell-escaping and
+                safely adopts unmanaged resources into state.
+              </p>
+              <div class="code-block">
+                <pre><code># imports.tf
+import {
+  to = aws_cloudwatch_log_group.lambda_logs["increment-visitor-counter"]
+  id = "/aws/lambda/increment-visitor-counter"
+}
+
+import {
+  to = aws_cloudwatch_log_group.lambda_logs["send-contact-email"]
+  id = "/aws/lambda/send-contact-email"
+}</code></pre>
+              </div>
+
+              <h2>5. Key Technical Takeaways</h2>
+              <ul>
+                <li>
+                  <strong>Dynamic Output Mapping:</strong> Used dynamic `for`
+                  expressions in outputs (`[for lg in
+                  aws_cloudwatch_log_group.lambda_logs : lg.arn]`) to extract
+                  attributes across iterated resource collections.
+                </li>
+                <li>
+                  <strong>State Collision Resolution:</strong> Solved state
+                  conflicts declaratively directly in HCL code rather than
+                  relying on brittle CLI commands.
+                </li>
+                <li>
+                  <strong>Tag Standardization:</strong> Standardized resource
+                  tagging across the entire stack using `local.common_tags`.
+                </li>
+              </ul>
+            </div>
+          </article>
+
+          <aside class="article-sidebar">
+            <div class="sidebar-card">
+              <h3 class="sidebar-title">Related Case Studies</h3>
+              <ul class="related-list">
+                <li class="related-item">
+                  <a
+                    href="terraform-cicd-serverless-stack.html"
+                    class="related-link"
+                    >Automating Serverless Stack with Terraform</a
+                  >
+                </li>
+                <li class="related-item">
+                  <a href="serverless-visitor-counter.html" class="related-link"
+                    >Serverless Visitor Counter</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

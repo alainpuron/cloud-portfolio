@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Projects - Alain Puron</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/blog.css">
+    <style>
+        .projects-header {
+            text-align: center;
+            margin: 4rem 0 3rem;
+        }
+
+        .projects-header h1 {
+            font-size: 3.5rem;
+            color: #0f172a;
+            margin-bottom: 1rem;
+        }
+
+        .projects-header p {
+            color: #475569;
+            font-size: 1.125rem;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .project-grid-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .project-grid-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .project-image-container {
+            width: 100%;
+            height: 200px;
+            background-color: #f1f5f9;
+            overflow: hidden;
+        }
+
+        .project-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .project-grid-card:hover .project-image-container img {
+            transform: scale(1.05);
+        }
+
+        .project-content {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .project-meta-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .project-tag {
+            color: #1d4ed8;
+            background: #eff6ff;
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .project-date-text {
+            color: #64748b;
+        }
+
+        .project-card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 0.75rem;
+            line-height: 1.3;
+        }
+
+        .back-nav {
+            max-width: 1200px;
+            margin: 2rem auto 0;
+            padding: 0 2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-canvas" style="background-color: #f8fafc; min-height: 100vh;">
+        
+        <div class="back-nav">
+            <a href="index.html" class="back-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                <span>Back to Home</span>
+            </a>
+        </div>
+
+        <header class="projects-header">
+            <h1>All Projects</h1>
+            <p>A collection of my cloud engineering projects and deep dives.</p>
+        </header>
+
+        <div class="projects-grid">
+            
+            <a href="blogs/how-to-create-an-aws-s3-bucket.html" class="project-grid-card">
+                <div class="project-image-container">
+                    <img src="images/arch.jpg" alt="AWS S3 Bucket">
+                </div>
+                <div class="project-content">
+                    <div class="project-meta-info">
+                        <span class="project-tag">AWS / Storage</span>
+                        <span class="project-date-text">Aug 20, 2026</span>
+                    </div>
+                    <h3 class="project-card-title">How to Create an AWS S3 Bucket</h3>
+                </div>
+            </a>
+
+            <a href="blogs/s3-for-hosting-static-website.html" class="project-grid-card">
+                <div class="project-image-container">
+                    <img src="images/stones.jpg" alt="S3 Static Website">
+                </div>
+                <div class="project-content">
+                    <div class="project-meta-info">
+                        <span class="project-tag">AWS / Hosting</span>
+                        <span class="project-date-text">Aug 20, 2026</span>
+                    </div>
+                    <h3 class="project-card-title">S3 for Hosting Static Website</h3>
+                </div>
+            </a>
+
+            <a href="blogs/cicd-pipeline-from-github.html" class="project-grid-card">
+                <div class="project-image-container">
+                    <img src="images/lighthouse.jpg" alt="CI/CD Pipeline">
+                </div>
+                <div class="project-content">
+                    <div class="project-meta-info">
+                        <span class="project-tag">DevOps / CI/CD</span>
+                        <span class="project-date-text">Aug 20, 2026</span>
+                    </div>
+                    <h3 class="project-card-title">CI/CD Pipeline from GitHub</h3>
+                </div>
+            </a>
+
+            <a href="blogs/attach-domain-to-s3-static-website.html" class="project-grid-card">
+                <div class="project-image-container">
+                    <img src="images/broken.jpg" alt="Attach Domain to S3">
+                </div>
+                <div class="project-content">
+                    <div class="project-meta-info">
+                        <span class="project-tag">AWS / Route 53</span>
+                        <span class="project-date-text">Aug 24, 2026</span>
+                    </div>
+                    <h3 class="project-card-title">Attach Domain to S3 Static Website</h3>
+                </div>
+            </a>
+
+            <a href="blogs/serverless-contact-form.html" class="project-grid-card">
+                <div class="project-image-container">
+                    <img src="images/arch.jpg" alt="Serverless Contact Form">
+                </div>
+                <div class="project-content">
+                    <div class="project-meta-info">
+                        <span class="project-tag">AWS / Serverless</span>
+                        <span class="project-date-text">Aug 26, 2026</span>
+                    </div>
+                    <h3 class="project-card-title">Serverless Contact Form</h3>
+                </div>
+            </a>
+
+            <a href="blogs/serverless-visitor-counter.html" class="project-grid-card">
+                <div class="project-image-container">
+                    <img src="images/stones.jpg" alt="Serverless Visitor Counter">
+                </div>
+                <div class="project-content">
+                    <div class="project-meta-info">
+                        <span class="project-tag">AWS / DynamoDB</span>
+                        <span class="project-date-text">Aug 26, 2026</span>
+                    </div>
+                    <h3 class="project-card-title">Serverless Visitor Counter</h3>
+                </div>
+            </a>
+
+            <a href="blogs/terraform-advanced-hcl-refactoring.html" class="project-grid-card">
+                <div class="project-image-container">
+                    <img src="images/lighthouse.jpg" alt="Terraform Advanced HCL">
+                </div>
+                <div class="project-content">
+                    <div class="project-meta-info">
+                        <span class="project-tag">Terraform / IaC</span>
+                        <span class="project-date-text">Aug 27, 2026</span>
+                    </div>
+                    <h3 class="project-card-title">Terraform Advanced HCL Refactoring</h3>
+                </div>
+            </a>
+
+            <a href="blogs/terraform-cicd-serverless-stack.html" class="project-grid-card">
+                <div class="project-image-container">
+                    <img src="images/broken.jpg" alt="Terraform CI/CD">
+                </div>
+                <div class="project-content">
+                    <div class="project-meta-info">
+                        <span class="project-tag">Terraform / CI/CD</span>
+                        <span class="project-date-text">Aug 27, 2026</span>
+                    </div>
+                    <h3 class="project-card-title">Terraform CI/CD Serverless Stack</h3>
+                </div>
+            </a>
+
+            <a href="blogs/terraform-remote-backend.html" class="project-grid-card">
+                <div class="project-image-container">
+                    <img src="images/arch.jpg" alt="Terraform Remote Backend">
+                </div>
+                <div class="project-content">
+                    <div class="project-meta-info">
+                        <span class="project-tag">Terraform / Backend</span>
+                        <span class="project-date-text">Aug 27, 2026</span>
+                    </div>
+                    <h3 class="project-card-title">Terraform Remote Backend</h3>
+                </div>
+            </a>
+
+        </div>
+    </div>
+</body>
+</html>
