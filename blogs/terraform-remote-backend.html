@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Terraform Remote S3 Backend & State Locking - Alain Puron</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../css/styles.css" />
+    <link rel="stylesheet" href="../css/blog.css" />
+  </head>
+
+  <body>
+    <div class="app-canvas">
+      <div class="article-page">
+        <a href="../blog.html" class="back-link">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+          <span>Back to Blog</span>
+        </a>
+
+        <div class="article-layout">
+          <!-- Main Article -->
+          <article class="article-card">
+            <header class="article-header">
+              <div class="article-meta">
+                <span class="service-tag">TERRAFORM / IAC</span>
+                <span class="project-date">AUG 27, 2026</span>
+              </div>
+              <h1 class="article-title">
+                Setting Up Terraform with Remote S3 Backend & State Locking
+              </h1>
+              <p class="article-lead">
+                A step-by-step guide to configuring a local workstation for HashiCorp Terraform on Windows, establishing an encrypted S3 remote state backend with DynamoDB locking, importing live resources, and parameterizing HCL modules safely for Git.
+              </p>
+            </header>
+
+            <div class="article-content">
+              <h2>1. Local Workstation & CLI Setup (Windows)</h2>
+              <p>
+                In production, infrastructure code is written in an IDE like VS Code and authenticated using local CLI profiles rather than embedded secrets. Install Terraform and the AWS CLI via PowerShell:
+              </p>
+              <div class="code-block">
+                <pre><code># Install Terraform & AWS CLI via Winget (PowerShell as Admin)
+winget install -e --id HashiCorp.Terraform
+winget install -e --id Amazon.AWSCLI
+
+# Authenticate local machine with AWS IAM credentials
+aws configure</code></pre>
+              </div>
+
+              <h2>2. Repository Configuration & Git Security</h2>
+              <p>
+                Terraform state files (<code>.tfstate</code>) can contain sensitive resource outputs and must never be committed to public Git repositories. Set up a local project folder and initialize a strict <code>.gitignore</code> file:
+              </p>
+              <div class="code-block">
+                <pre><code># .gitignore
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform.lock.hcl</code></pre>
+              </div>
+
+              <h2>3. Anatomy of Terraform Blocks & Implicit Dependencies</h2>
+              <p>
+                Terraform uses HashiCorp Configuration Language (HCL). Resources reference each other dynamically using the syntax <code>provider_type.logical_name.attribute</code>. Terraform evaluates these references to infer execution order automatically.
+              </p>
+              <div class="code-block">
+                <pre><code># Example: storage.tf
+resource "aws_s3_bucket" "portfolio_bucket" {
+  bucket = "portfolio-dev-assets-2026"
+}
+
+# Referenced block: Wait for bucket creation before setting access rules
+resource "aws_s3_bucket_public_access_block" "allow_public" {
+  bucket                  = aws_s3_bucket.portfolio_bucket.id
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}</code></pre>
+              </div>
+
+              <h2>4. Establishing the Remote State Backend</h2>
+              <p>
+                To prevent state file loss and enable concurrent execution safety, state must be stored in S3 and locked using DynamoDB.
+              </p>
+              <p><strong>Step 4a: Define Backend Infrastructure (<code>backend_setup.tf</code>)</strong></p>
+              <div class="code-block">
+                <pre><code>resource "aws_s3_bucket" "tf_state_bucket" {
+  bucket        = "alain-puron-terraform-state-bucket-2026"
+  force_destroy = true
+}
+
+resource "aws_s3_bucket_versioning" "state_versioning" {
+  bucket = aws_s3_bucket.tf_state_bucket.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_dynamodb_table" "tf_state_locks" {
+  name         = "alain-puron-terraform-state-locks-2026"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "LockID"
+
+  attribute {
+    name = "LockID"
+    type = "S"
+  }
+}</code></pre>
+              </div>
+
+              <p><strong>Step 4b: Migrate State to Remote Backend (<code>backend.tf</code>)</strong></p>
+              <div class="code-block">
+                <pre><code>terraform {
+  backend "s3" {
+    bucket         = "alain-puron-terraform-state-bucket-2026"
+    key            = "global/s3/terraform.tfstate"
+    region         = "us-west-2"
+    dynamodb_table = "alain-puron-terraform-state-locks-2026"
+    encrypt        = true
+  }
+}</code></pre>
+              </div>
+              <p>Execute initialization to transfer local state into S3:</p>
+              <div class="code-block">
+                <pre><code>terraform init</code></pre>
+              </div>
+
+              <h2>5. Adopting Existing Resources via <code>terraform import</code></h2>
+              <p>
+                If infrastructure resources already exist in AWS prior to writing Terraform code, running <code>terraform apply</code> triggers a <code>409 Conflict</code> or <code>ResourceInUseException</code>. Use <code>terraform import</code> to adopt live infrastructure into state tracking:
+              </p>
+              <div class="code-block">
+                <pre><code># Syntax: terraform import <RESOURCE_TYPE>.<LOGICAL_NAME> <AWS_IDENTIFIER>
+terraform import aws_s3_bucket.tf_state_bucket alain-puron-terraform-state-bucket-2026
+terraform import aws_dynamodb_table.tf_state_locks alain-puron-terraform-state-locks-2026</code></pre>
+              </div>
+
+              <h2>6. Parameterizing Code (Variables, Locals, & Outputs)</h2>
+              <p>
+                Replace hardcoded strings with configurable input variables, calculated local values, and exported outputs to ensure reusability across environments.
+              </p>
+
+              <p><strong><code>variables.tf</code>:</strong></p>
+              <div class="code-block">
+                <pre><code>variable "aws_region" {
+  type        = string
+  default     = "us-west-2"
+  description = "Target deployment region"
+}
+
+variable "environment" {
+  type        = string
+  default     = "dev"
+  description = "Deployment environment"
+}</code></pre>
+              </div>
+
+              <p><strong><code>outputs.tf</code>:</strong></p>
+              <div class="code-block">
+                <pre><code>output "bucket_arn" {
+  value       = aws_s3_bucket.portfolio_bucket.arn
+  description = "ARN of the managed asset bucket"
+}</code></pre>
+              </div>
+
+              <h2>7. Standard Core Workflow Summary</h2>
+              <ul>
+                <li><code>terraform init</code>: Downloads provider plugins and connects to the S3 remote backend.</li>
+                <li><code>terraform plan</code>: Performs a dry run, calculating exact differences between local `.tf` code and live AWS state.</li>
+                <li><code>terraform apply</code>: Acquires the DynamoDB execution lock and provisions planned resources.</li>
+                <li><code>terraform destroy</code>: Safely tears down every resource managed within the project state file.</li>
+              </ul>
+            </div>
+          </article>
+
+          <!-- Sidebar -->
+          <aside class="article-sidebar">
+            <div class="sidebar-card">
+              <h3 class="sidebar-title">Related Case Studies</h3>
+              <ul class="related-list">
+                <li class="related-item">
+                  <a href="serverless-contact-form.html" class="related-link"
+                    >Serverless Contact Form with SES</a
+                  >
+                </li>
+                <li class="related-item">
+                  <a href="serverless-visitor-counter.html" class="related-link"
+                    >Serverless Visitor Counter</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
