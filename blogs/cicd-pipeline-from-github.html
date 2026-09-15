@@ -108,8 +108,8 @@ jobs: <br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- name: Configure AWS Credentials <br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uses: aws-actions/configure-aws-credentials@v4 <br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;with: <br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;aws-access-key-id: \${{ secrets.AWS_ACCESS_KEY_ID }} <br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;aws-secret-access-key: \${{ secrets.AWS_SECRET_ACCESS_KEY }} <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }} <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }} <br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;aws-region: us-east-1 <br><br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- name: Sync files to S3 <br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;run: | <br>
